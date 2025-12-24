@@ -155,21 +155,46 @@ const ZODIAC = [
   },
 ];
 
-function isValidDateInput(value) {
-  if (!value) return false;
-  const d = new Date(value + "T00:00:00");
-  return !Number.isNaN(d.getTime());
+// "DD/MM/YYYY" -> "YYYY-MM-DD"
+function parseDMYtoISO(dmy) {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec((dmy || "").trim());
+  if (!m) return null;
+  const dd = Number(m[1]),
+    mm = Number(m[2]),
+    yyyy = Number(m[3]);
+  if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return null;
+
+  const iso = `${String(yyyy).padStart(4, "0")}-${String(mm).padStart(
+    2,
+    "0"
+  )}-${String(dd).padStart(2, "0")}`;
+  const d = new Date(iso + "T00:00:00");
+
+  // validasi real (hindari 31/02)
+  if (Number.isNaN(d.getTime())) return null;
+  if (d.getFullYear() !== yyyy || d.getMonth() + 1 !== mm || d.getDate() !== dd)
+    return null;
+
+  // jangan boleh masa depan
+  const today = new Date();
+  const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  if (d > t0) return null;
+
+  return iso;
 }
-function formatIDDate(yyyyMMdd) {
-  const d = new Date(yyyyMMdd + "T00:00:00");
+function isValidDateInput(value) {
+  return !!parseDMYtoISO(value);
+}
+function formatIDDate(isoYyyyMmDd) {
+  const d = new Date(isoYyyyMmDd + "T00:00:00");
   return d.toLocaleDateString("id-ID", {
     day: "2-digit",
     month: "long",
     year: "numeric",
   });
 }
-function nextBirthdayInfo(yyyyMMdd) {
-  const dob = new Date(yyyyMMdd + "T00:00:00");
+function nextBirthdayInfo(isoYyyyMmDd) {
+  const dob = new Date(isoYyyyMmDd + "T00:00:00");
   const now = new Date();
   const y = now.getFullYear();
   let next = new Date(y, dob.getMonth(), dob.getDate());
@@ -245,6 +270,16 @@ const cheerBtn = $("#cheerBtn");
 
 const morphBlob = $("#morphBlob");
 const toTopBtn = $("#toTop");
+
+/* Flatpickr init (force UI modern + allow typing) */
+if (window.flatpickr) {
+  window.flatpickr(dobInput, {
+    dateFormat: "d/m/Y",
+    allowInput: true,
+    disableMobile: true,
+    maxDate: "today",
+  });
+}
 
 /* =========================
    LENIS
@@ -324,8 +359,6 @@ function hardSnapTo(targetSelector) {
 
 /* =========================
    CURTAINS + SNAP (SMOOTHER)
-   - scroll NOT locked while closing
-   - scroll locked only when fully closed
 ========================= */
 let curtainBusy = false;
 
@@ -355,34 +388,21 @@ function curtainCycleTo(
   if (curtainBusy || !lenis) return;
   curtainBusy = true;
 
-  // jangan lock sekarang -> biar gak "stuck" saat tirai masih bergerak
   gsap.set("#curtains", { opacity: 1 });
 
   const tl = gsap.timeline({
     onComplete: () => {
       curtainBusy = false;
-
-      // buka lock dulu, lalu snap final supaya pasti mendarat
       unlockScroll();
       hardSnapTo(targetSelector);
-
       requestAnimationFrame(() => ScrollTrigger.refresh());
     },
   });
 
-  // 1) tutup tirai (scroll masih bebas)
   tl.add(curtainsClose(closeDur), 0);
-
-  // 2) saat FULL ketutup, baru lock
   tl.add(() => lockScroll(), closeDur);
-
-  // 3) snap saat tertutup (tidak terlihat)
   tl.add(() => hardSnapTo(targetSelector), closeDur + 0.01);
-
-  // 4) tahan sebentar tertutup & locked
   tl.to({}, { duration: hold }, closeDur + 0.01);
-
-  // 5) buka tirai
   tl.add(curtainsOpen(openDur), closeDur + hold);
 
   return tl;
@@ -538,7 +558,6 @@ function makeTree() {
     { r: 0.52, h: 0.9, y: 1.58 },
   ];
 
-  // simpan semua lampu untuk anim kelap-kelip
   g.userData.lights = [];
 
   layers.forEach((l, i) => {
@@ -549,24 +568,20 @@ function makeTree() {
     cone.position.y = l.y;
     g.add(cone);
 
-    // Garland / lampu
     const bulbs = new THREE.Group();
     for (let b = 0; b < 24; b++) {
       const m = new THREE.MeshStandardMaterial({
         color: 0xffffff,
         emissive: 0xffffff,
-        emissiveIntensity: 0.85, // basis terang
+        emissiveIntensity: 0.85,
         roughness: 0.22,
         metalness: 0.1,
       });
 
-      // warna lebih variatif
       m.color.setHSL((b / 24 + i * 0.2) % 1, 0.95, 0.58);
       m.emissive.set(m.color);
 
-      // bola lampu + glow halo
       const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.052, 14, 14), m);
-
       const halo = new THREE.Mesh(
         new THREE.SphereGeometry(0.12, 12, 12),
         new THREE.MeshBasicMaterial({
@@ -576,27 +591,24 @@ function makeTree() {
         })
       );
 
-      // pos melingkar
       const a = (b / 24) * Math.PI * 2;
       const rr = l.r * 0.64;
       const yJitter = Math.random() * 0.44 - 0.18;
       bulb.position.set(Math.cos(a) * rr, l.y + yJitter, Math.sin(a) * rr);
       halo.position.copy(bulb.position);
 
-      // phase random biar kelap-kelipnya tidak seragam
       bulb.userData.blinkPhase = Math.random() * Math.PI * 2;
-      bulb.userData.base = 0.55 + Math.random() * 0.55; // brightness base
+      bulb.userData.base = 0.55 + Math.random() * 0.55;
       bulb.userData.halo = halo;
+
       bulbs.add(bulb);
       bulbs.add(halo);
 
-      // simpan untuk anim di tick()
       g.userData.lights.push(bulb);
     }
     g.add(bulbs);
   });
 
-  // star top lebih glow
   const star = new THREE.Mesh(
     new THREE.IcosahedronGeometry(0.18, 0),
     new THREE.MeshStandardMaterial({
@@ -609,7 +621,6 @@ function makeTree() {
   star.position.y = 1.95;
   g.add(star);
 
-  // halo star
   const starHalo = new THREE.Mesh(
     new THREE.SphereGeometry(0.42, 16, 16),
     new THREE.MeshBasicMaterial({
@@ -621,7 +632,6 @@ function makeTree() {
   starHalo.position.y = 1.95;
   g.add(starHalo);
 
-  // simpan referensi star buat anim pulse
   g.userData.star = star;
   g.userData.starHalo = starHalo;
 
@@ -645,7 +655,6 @@ function makeSnowman() {
 
   g.add(body, mid, head);
 
-  // HIDUNG lebih mancung (lebih panjang + ujung kecil)
   const nose = new THREE.Mesh(
     new THREE.ConeGeometry(0.05, 0.48, 18),
     new THREE.MeshStandardMaterial({ color: 0xff7a2f, roughness: 0.65 })
@@ -654,7 +663,6 @@ function makeSnowman() {
   nose.position.set(0, 0.75, 0.39);
   g.add(nose);
 
-  // Mata
   const eyeMat = new THREE.MeshStandardMaterial({
     color: 0x0b0b12,
     roughness: 0.6,
@@ -665,7 +673,6 @@ function makeSnowman() {
   eyeR.position.set(0.12, 0.82, 0.33);
   g.add(eyeL, eyeR);
 
-  // Kancing
   const btnMat = new THREE.MeshStandardMaterial({
     color: 0x111320,
     roughness: 0.7,
@@ -676,7 +683,6 @@ function makeSnowman() {
     g.add(btn);
   }
 
-  // Syal
   const scarf = new THREE.Mesh(
     new THREE.TorusGeometry(0.42, 0.09, 12, 24),
     new THREE.MeshStandardMaterial({ color: 0xb0002a, roughness: 0.6 })
@@ -685,9 +691,8 @@ function makeSnowman() {
   scarf.position.y = 0.46;
   g.add(scarf);
 
-  // TOPI (black top hat + band)
+  // top hat
   const hatGroup = new THREE.Group();
-
   const brim = new THREE.Mesh(
     new THREE.CylinderGeometry(0.32, 0.32, 0.05, 22),
     new THREE.MeshStandardMaterial({
@@ -719,10 +724,8 @@ function makeSnowman() {
   band.position.y = 0.08;
 
   hatGroup.add(brim, crown, band);
-
-  // letakkan topi di atas kepala
   hatGroup.position.set(0, 1.05, 0);
-  hatGroup.rotation.z = -0.08; // sedikit miring biar lucu
+  hatGroup.rotation.z = -0.08;
   g.add(hatGroup);
 
   g.position.set(2.15, 0, -1.05);
@@ -833,38 +836,34 @@ let t = 0;
 function tick() {
   t += 0.01;
   world.rotation.y = Math.sin(t * 0.25) * 0.08;
-  // ===== Tree lights blink (meriah) =====
-  // world.children[0] itu tree kalau urutan world.add(makeTree()) tetap pertama
+
+  // Tree lights blink (meriah)
   const tree = world.children.find((o) => o.userData?.lights);
   if (tree) {
     const lights = tree.userData.lights;
     const star = tree.userData.star;
     const starHalo = tree.userData.starHalo;
 
-    // t adalah waktu global yang sudah kamu pakai
     for (let i = 0; i < lights.length; i++) {
       const bulb = lights[i];
       const mat = bulb.material;
 
-      // kombinasi sin + sedikit "sparkle" random halus
-      const w = 2.2 + (i % 6) * 0.25; // variasi frekuensi
-      const s1 = Math.sin(t * w + bulb.userData.blinkPhase) * 0.5 + 0.5; // 0..1
+      const w = 2.2 + (i % 6) * 0.25;
+      const s1 = Math.sin(t * w + bulb.userData.blinkPhase) * 0.5 + 0.5;
       const sparkle =
         (Math.sin(t * (6.5 + (i % 5)) + bulb.userData.blinkPhase * 1.7) * 0.5 +
           0.5) *
         0.25;
 
-      const intensity = 0.25 + bulb.userData.base * (0.65 * s1 + sparkle); // ~0.25..>1
+      const intensity = 0.25 + bulb.userData.base * (0.65 * s1 + sparkle);
       mat.emissiveIntensity = intensity;
 
-      // halo ikut naik turun
       if (bulb.userData.halo) {
         bulb.userData.halo.material.opacity =
           0.1 + Math.min(0.35, intensity * 0.18);
       }
     }
 
-    // star pulse
     if (star) {
       const pulse = Math.sin(t * 2.4) * 0.5 + 0.5;
       star.material.emissiveIntensity = 1.0 + pulse * 0.9;
@@ -876,6 +875,7 @@ function tick() {
     }
   }
 
+  // Snow fall
   const p = snow.geometry.attributes.position;
   const s = snow.userData.speedAttr;
   for (let i = 0; i < p.count; i++) {
@@ -973,7 +973,6 @@ cheerBtn.addEventListener("click", sparkleBurst);
 function buildScroll() {
   let lastInfoDir = 0;
 
-  // curtain cycle saat masuk/keluar section INFO
   ScrollTrigger.create({
     trigger: "#info",
     start: "top 92%",
@@ -991,7 +990,6 @@ function buildScroll() {
     },
   });
 
-  // morph blob
   gsap.to(morphBlob, {
     scrollTrigger: {
       trigger: "#gift",
@@ -1003,7 +1001,6 @@ function buildScroll() {
     ease: "none",
   });
 
-  // camera transitions
   gsap.to(camera.position, {
     scrollTrigger: {
       trigger: "#info",
@@ -1039,7 +1036,6 @@ function buildScroll() {
     ease: "none",
   });
 
-  // Gift: pop up ucapan (trigger aman)
   ScrollTrigger.create({
     trigger: "#gift",
     start: "top 70%",
@@ -1081,13 +1077,15 @@ form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const name = nameInput.value.trim();
-  const dob = dobInput.value;
-  if (name.length < 2 || !isValidDateInput(dob)) return;
+  const dmyDob = dobInput.value;
 
-  const d = new Date(dob + "T00:00:00");
+  if (name.length < 2 || !isValidDateInput(dmyDob)) return;
+
+  const isoDob = parseDMYtoISO(dmyDob);
+  const d = new Date(isoDob + "T00:00:00");
   const z = getZodiac(d.getMonth() + 1, d.getDate());
-  const born = formatIDDate(dob);
-  const next = nextBirthdayInfo(dob);
+  const born = formatIDDate(isoDob);
+  const next = nextBirthdayInfo(isoDob);
 
   whoLine.textContent = `Untuk ${name}`;
 
@@ -1127,7 +1125,6 @@ form.addEventListener("submit", async (e) => {
       gate.style.display = "none";
       gsap.to(app, { opacity: 1, duration: 0.6, ease: "power2.out" });
 
-      // buka tirai sekali di awal
       curtainsOpen(1.0);
 
       buildScroll();

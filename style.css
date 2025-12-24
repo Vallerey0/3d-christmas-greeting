@@ -48,6 +48,7 @@ body{
 .gate__form{ display:grid; gap:12px; }
 .field{ display:grid; gap:8px; }
 .field__label{ color: var(--muted); font-size:14px; }
+.field__help{ color: rgba(244,247,255,0.58); font-size:12px; margin-top:-4px; }
 .field__input{
   width:100%;
   border-radius:16px;
@@ -280,7 +281,7 @@ body{
 }
 
 /* Gift stage */
-.section--gift{ position: relative; } /* IMPORTANT: overlay wish nempel */
+.section--gift{ position: relative; }
 .giftStage{
   position: relative;
   width: 100%;
@@ -375,3 +376,76 @@ body{
   pointer-events:none;
   backdrop-filter: blur(10px);
 }
+
+/* ===== Flatpickr fix: bulan/tahun jelas di dark theme ===== */
+.flatpickr-calendar {
+  background: rgba(10, 12, 25, 0.94) !important;
+  border: 1px solid rgba(255,255,255,0.16) !important;
+  box-shadow: 0 18px 70px rgba(0,0,0,0.55) !important;
+}
+
+.flatpickr-months,
+.flatpickr-months .flatpickr-month {
+  color: rgba(244,247,255,0.95) !important;
+}
+
+.flatpickr-current-month {
+  color: rgba(244,247,255,0.95) !important;
+}
+
+.flatpickr-current-month .flatpickr-monthDropdown-months {
+  color: rgba(244,247,255,0.95) !important;
+  background: rgba(255,255,255,0.06) !important;
+  border-radius: 10px !important;
+  padding: 2px 8px !important;
+}
+
+.flatpickr-current-month input.cur-year {
+  color: rgba(244,247,255,0.95) !important;
+  background: rgba(255,255,255,0.06) !important;
+  border-radius: 10px !important;
+}
+
+.flatpickr-current-month input.cur-year:focus {
+  box-shadow: 0 0 0 4px rgba(127, 92, 255, 0.18) !important;
+}
+
+.flatpickr-monthDropdown-months option {
+  background: rgba(10, 12, 25, 1) !important;
+  color: rgba(244,247,255,0.95) !important;
+}
+
+/* tombol prev/next */
+.flatpickr-prev-month,
+.flatpickr-next-month {
+  color: rgba(244,247,255,0.92) !important;
+  fill: rgba(244,247,255,0.92) !important;
+}
+
+.flatpickr-prev-month:hover,
+.flatpickr-next-month:hover {
+  color: rgba(0,214,255,0.95) !important;
+  fill: rgba(0,214,255,0.95) !important;
+}
+
+/* weekday & day */
+.flatpickr-weekday { color: rgba(244,247,255,0.72) !important; }
+.flatpickr-day { color: rgba(244,247,255,0.88) !important; }
+.flatpickr-day:hover { background: rgba(255,255,255,0.10) !important; }
+.flatpickr-day.selected,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange {
+  background: rgba(127, 92, 255, 0.92) !important;
+  border-color: rgba(127, 92, 255, 0.92) !important;
+  color: #07101a !important;
+}
+.flatpickr-day.today {
+  border-color: rgba(0,214,255,0.75) !important;
+}
+
+/* optional: bar atas biar rapi */
+.flatpickr-rContainer,
+.flatpickr-days {
+  background: transparent !important;
+}
+
