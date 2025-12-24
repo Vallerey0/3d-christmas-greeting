@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Natal 2025</title>
+
+    <link rel="stylesheet" href="./style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/lenis@1.3.16/dist/lenis.css"
+    />
+  </head>
+
+  <body>
+    <canvas id="webgl" aria-hidden="true"></canvas>
+    <audio id="bgm" src="./Natal.mp3" preload="auto" loop></audio>
+
+    <!-- Gate -->
+    <div id="gate" class="gate">
+      <div class="gate__card">
+        <div class="gate__badge">Natal 2025</div>
+        <h1 class="gate__title">Masukkan dulu ya ✨</h1>
+
+        <form id="gateForm" class="gate__form" autocomplete="off">
+          <label class="field">
+            <span class="field__label">Nama</span>
+            <input
+              id="nameInput"
+              class="field__input"
+              type="text"
+              placeholder="Tulis nama..."
+              maxlength="28"
+              required
+            />
+          </label>
+
+          <label class="field">
+            <span class="field__label">Tanggal lahir</span>
+            <input id="dobInput" class="field__input" type="date" required />
+          </label>
+
+          <button id="startBtn" class="btn btn--primary" type="submit" disabled>
+            Masuk
+          </button>
+          <p class="gate__hint" id="gateHint">
+            Isi nama & tanggal lahir dulu biar tombolnya nyala.
+          </p>
+        </form>
+      </div>
+    </div>
+
+    <!-- Curtains -->
+    <div id="curtains" class="curtains" aria-hidden="true">
+      <div class="curtain curtain--left"></div>
+      <div class="curtain curtain--right"></div>
+      <div class="curtain__glow"></div>
+    </div>
+
+    <!-- Scroll to top -->
+    <button id="toTop" class="toTop" type="button" aria-label="Scroll ke atas">
+      ↑
+    </button>
+
+    <main id="app" class="app">
+      <header class="hero" id="hero">
+        <div class="hero__inner">
+          <div class="pill">
+            <span class="dot"></span>
+            <span id="whoLine">Untuk kamu</span>
+          </div>
+
+          <h2 class="hero__title">
+            Selamat Natal <span class="hero__titleAccent">2025</span>
+          </h2>
+
+          <p class="hero__subtitle" id="heroSubtitle">
+            Scroll ke bawah ya untuk mengetahui tentang anda dan ucapan Natal
+            dari saya.
+          </p>
+
+          <div class="hero__scroll">
+            <span class="mouse"></span>
+            <span>Scroll</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- INFO -->
+      <section class="section section--info" id="info">
+        <div class="section__inner">
+          <h3 class="section__title">Tentang kamu</h3>
+
+          <div class="cards">
+            <div class="card card--galaxy reveal">
+              <div class="card__shine"></div>
+              <div class="card__content">
+                <div class="miniTitle">Salam</div>
+                <p class="bigLine" id="aboutLine">
+                  Hi —, kamu lahir di tanggal —.
+                </p>
+              </div>
+            </div>
+
+            <div class="card card--galaxy reveal">
+              <div class="card__shine"></div>
+              <div class="card__content">
+                <div class="miniTitle">Zodiak</div>
+
+                <div class="zodiacTop">
+                  <div class="zodiacBadge" id="zodiacBadge">★</div>
+                  <div>
+                    <div class="zodiacName" id="zodiacName">-</div>
+                    <div class="zodiacSmall" id="zodiacMeta">-</div>
+                  </div>
+                </div>
+
+                <p class="zodiacDesc" id="zodiacDesc">-</p>
+
+                <div class="zodiacGrid">
+                  <div class="zg">
+                    <div class="zg__k">Kekuatan</div>
+                    <div class="zg__v" id="zStrength">-</div>
+                  </div>
+                  <div class="zg">
+                    <div class="zg__k">Tantangan</div>
+                    <div class="zg__v" id="zChallenge">-</div>
+                  </div>
+                </div>
+
+                <p class="zodiacTip" id="zodiacTip">-</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- GIFT (NO CARD/PANEL) -->
+      <section class="section section--gift" id="gift">
+        <div class="section__inner">
+          <div class="giftStage reveal" aria-hidden="true">
+            <div class="morphBlob" id="morphBlob"></div>
+          </div>
+        </div>
+
+        <!-- POPUP -->
+        <div class="wish" id="wish" aria-live="polite">
+          <div class="miniGift" id="miniGift" aria-hidden="true">
+            <div class="miniGift__lid"></div>
+            <div class="miniGift__box"></div>
+            <div class="miniGift__ribbon"></div>
+          </div>
+
+          <div class="wish__card" id="wishCard">
+            <div class="wish__spark">🎄</div>
+            <h4 class="wish__title" id="wishTitle">Selamat Natal!</h4>
+            <p class="wish__text" id="wishText">-</p>
+            <div class="wish__actions">
+              <button class="btn btn--primary" id="cheerBtn" type="button">
+                Meriahkan!
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="footer" id="footer">
+        <p>Made with Three.js + GSAP + Lenis ✨</p>
+      </footer>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lenis@1.3.16/dist/lenis.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
